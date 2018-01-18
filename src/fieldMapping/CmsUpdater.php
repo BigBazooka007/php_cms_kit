@@ -122,7 +122,7 @@ abstract class CmsUpdater
                 $value = (string)$value;
                 break;
 			case "bool":
-				$value = boolval($value);
+				$value = boolval($value); /* PHP 5.5+ */
 				break;
         }
 
