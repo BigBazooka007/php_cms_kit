@@ -93,7 +93,7 @@ class GigyaUser extends GigyaJsonObject {
   /**
    * @var array
    */
-  private $data;
+  private $data = array();
 
   /**
    * @return string
@@ -375,7 +375,7 @@ class GigyaUser extends GigyaJsonObject {
    * @param array $data
    */
   public function setData($data) {
-    $this->data = $data;
+    $this->data = array_merge($this->data, $data);
   }
 
   /**
