@@ -204,6 +204,7 @@ abstract class GigyaUpdater
             case "int":
                 return (int) $val;
                 break;
+			case "boolean":
             case "bool":
                 if (is_string($val)) {
                     $val = strtolower($val);

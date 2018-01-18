@@ -404,10 +404,10 @@ class GigyaUser extends GigyaJsonObject {
             if (is_object($accData)) {
                 $accData = $accData->__get('get' . ucfirst($key));
             }
-            elseif (is_array($accData)) {
+            elseif (is_array($accData) and isset($accData[$key])) {
                 $accData = $accData[$key];
             }
-            elseif (is_null($accData)) { // there is no such key
+            elseif (is_null($accData) or !isset($accData[$key])) { // there is no such key
                 return null;
             }
         }
