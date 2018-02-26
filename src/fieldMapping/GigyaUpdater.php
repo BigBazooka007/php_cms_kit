@@ -1,13 +1,5 @@
 <?php
 
-/**
- * Created by PhpStorm.
- * User: Yaniv Aran-Shamir
- * Date: 5/26/16
- * Time: 2:05 PM
- */
-
-
 namespace Gigya\CmsStarterKit\fieldMapping;
 
 use Gigya\CmsStarterKit\GigyaApiHelper;
@@ -182,9 +174,12 @@ abstract class GigyaUpdater
         return $gigyaArray;
     }
 
+    /**
+     * Method callSetAccountInfo
+     */
     protected function callSetAccountInfo()
     {
-        $this->apiHelper->updateGigyaAccount($this->gigyaUid, $this->gigyaArray['profile'], $this->gigyaArray['data']);
+        $this->apiHelper->updateGigyaAccount($this->gigyaUid, $this->gigyaArray);
     }
 
     /**
@@ -239,5 +234,4 @@ abstract class GigyaUpdater
 
         $arr = $value;
     }
-
 }

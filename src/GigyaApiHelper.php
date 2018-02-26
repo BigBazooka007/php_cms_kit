@@ -1,18 +1,12 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Yaniv Aran-Shamir
- * Date: 4/5/16
- * Time: 5:06 PM
- */
 
 namespace Gigya\CmsStarterKit;
-
 
 use Gigya\CmsStarterKit\sdk\GSApiException;
 use Gigya\CmsStarterKit\sdk\GSFactory;
 use Gigya\CmsStarterKit\sdk\GSObject;
 use Gigya\CmsStarterKit\sdk\SigUtils;
+use Gigya\CmsStarterKit\user\GigyaUser;
 use Gigya\CmsStarterKit\user\GigyaUserFactory;
 
 class GigyaApiHelper
@@ -75,7 +69,7 @@ class GigyaApiHelper
         $res          = $this->sendApiCall("socialize.exchangeUIDSignature", $params);
         $sig          = $res->getData()->getString("UIDSignature", null);
         $sigTimestamp = $res->getData()->getString("signatureTimestamp", null);
-        if (null !== $sig && null !== $sigTimestamp) {
+        if (null !== $sig and null !== $sigTimestamp) {
             if (SigUtils::validateUserSignature($uid, $sigTimestamp, $this->secret, $sig)) {
                 $user = $this->fetchGigyaAccount($uid, $include, $extraProfileFields, $org_params);
                 return $user;
@@ -85,28 +79,35 @@ class GigyaApiHelper
         return false;
     }
 
+    /**
+     * @param string $uid                UID
+     * @param string $include            Fields to include in the response
+     * @param string $extraProfileFields Profile fields to include in the response
+     * @param array  $params             Params
+     *
+     * @return GigyaUser
+     */
     public function fetchGigyaAccount($uid, $include = null, $extraProfileFields = null, $params = array())
     {
-        if (null == $include) {
-            $include
-              = "identities-active,identities-all,loginIDs,emails,profile,data,password,lastLoginLocation,rba,
-            regSource,irank";
+        if (null === $include) {
+            $include = 'identities-active,identities-all,identities-global,loginIDs,emails,profile,data,password,isLockedOut,'
+                . 'lastLoginLocation,regSource,irank,rba,subscriptions,userInfo,preferences';
         }
-        if (null == $extraProfileFields) {
-            $extraProfileFields
-              = "languages,address,phones,education,honors,publications,patents,certifications,
-            professionalHeadline,bio,industry,specialties,work,skills,religion,politicalView,interestedIn,
-            relationshipStatus,hometown,favorites,followersCount,followingCount,username,locale,verified,timezone,likes,
-            samlData";
+        if (null === $extraProfileFields) {
+            $extraProfileFields = 'languages,address,phones,education,educationLevel,honors,publications,patents,certifications,'
+                . 'professionalHeadline,bio,industry,specialties,work,skills,religion,politicalView,interestedIn,relationshipStatus,'
+                . 'hometown,favorites,followersCount,followingCount,username,name,locale,verified,timezone,likes,samlData';
         }
+
         $params['UID'] = $uid;
         $params['include'] = $include;
         $params['extraProfileFields'] = $extraProfileFields;
 
-        $res          = $this->sendApiCall("accounts.getAccountInfo", $params);
-        $dataArray    = $res->getData()->serialize();
+        $res = $this->sendApiCall('accounts.getAccountInfo', $params);
+        $dataArray = $res->getData()->serialize();
+
         $profileArray = $dataArray['profile'];
-        $gigyaUser    = GigyaUserFactory::createGigyaUserFromArray($dataArray);
+        $gigyaUser = GigyaUserFactory::createGigyaUserFromArray($dataArray);
         $gigyaProfile = GigyaUserFactory::createGigyaProfileFromArray($profileArray);
         $gigyaUser->setProfile($gigyaProfile);
 
@@ -114,25 +115,55 @@ class GigyaApiHelper
     }
 
     /**
-     * @param string $uid
-     * @param array $profile
-     * @param array $data
+     * Send all the Gigya data for the user specified by the UID
      *
-     * @throws GSApiException
+     * Data format example :
+     * Array
+     *    (
+     *        [UID] => 60b1084f2ee846b883e84d6183575f71
+     *        [data] => Array
+     *            (
+     *                [hasChildren] => 1
+     *                [age] => 40
+     *             )
+     *        [isVerified] => 1
+     *        [profile] => Array
+     *            (
+     *                [gender] => u
+     *                [nickname] => Test6
+     *            )
+     *        [subscriptions] => Array
+     *            (
+     *                [demo] => Array
+     *                    (
+     *                        [email] => Array
+     *                            (
+     *                                [isSubscribed] => 1
+     *                                [tags] => Array
+     *                                    (
+     *                                        [0] => test1
+     *                                        [1] => test3
+     *                                    )
+     *                            )
+     *                    )
+     *            )
+     *    )
+     *
+     * @param string $uid UID
+     * @param array $data data
+     *
+     * @throws \InvalidArgumentException
      */
-    public function updateGigyaAccount($uid, $profile = array(), $data = array())
+    public function updateGigyaAccount($uid, $data)
     {
         if (empty($uid)) {
-            throw new \InvalidArgumentException("uid can not be empty");
+            throw new \InvalidArgumentException('uid can not be empty');
         }
+
         $paramsArray['UID'] = $uid;
-        if (!empty($profile) && count($profile) > 0) {
-            $paramsArray['profile'] = $profile;
-        }
-        if (!empty($data) && count($data) > 0) {
-            $paramsArray['data'] = $data;
-        }
-        $this->sendApiCall("accounts.setAccountInfo", $paramsArray);
+        $paramsArray = array_merge($paramsArray, $data);
+
+        $this->sendApiCall('accounts.setAccountInfo', $paramsArray);
     }
 
     public function getSiteSchema()
