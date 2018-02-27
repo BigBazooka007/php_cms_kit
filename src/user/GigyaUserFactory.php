@@ -19,13 +19,18 @@ class GigyaUserFactory
         foreach ($array as $key => $value) {
             $gigyaUser->__set($key, $value);
         }
-        $profileArray = $array['profile'];
-        $gigyaProfile = self::createGigyaProfileFromArray($profileArray);
-        $gigyaUser->setProfile($gigyaProfile);
 
-        $subscriptionsArray = $array['subscriptions'];
-        $gigyaSubscriptions = self::createGigyaSubscriptionsFromArray($subscriptionsArray);
-        $gigyaUser->setSubscriptions($gigyaSubscriptions);
+        if (array_key_exists('profile', $array)) {
+            $profileArray = $array['profile'];
+            $gigyaProfile = self::createGigyaProfileFromArray($profileArray);
+            $gigyaUser->setProfile($gigyaProfile);
+        }
+
+        if (array_key_exists('subscriptions', $array)) {
+            $subscriptionsArray = $array['subscriptions'];
+            $gigyaSubscriptions = self::createGigyaSubscriptionsFromArray($subscriptionsArray);
+            $gigyaUser->setSubscriptions($gigyaSubscriptions);
+        }
 
         return $gigyaUser;
     }

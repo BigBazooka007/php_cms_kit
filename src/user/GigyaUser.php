@@ -437,7 +437,11 @@ class GigyaUser extends GigyaJsonObject
      */
     public function setData($data)
     {
-        $this->data = $data;
+        if (is_array($this->data)) {
+            $this->data = array_merge($this->data, $data);
+        } else {
+            $this->data = $data;
+        }
     }
 
     /**
