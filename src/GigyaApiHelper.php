@@ -1,83 +1,93 @@
 <?php
+	/**
+	 * Created by PhpStorm.
+	 * User: Yaniv Aran-Shamir
+	 * Date: 4/5/16
+	 * Time: 5:06 PM
+	 */
 
-namespace Gigya\CmsStarterKit;
+	namespace Gigya\CmsStarterKit;
 
-use Gigya\CmsStarterKit\sdk\GSApiException;
-use Gigya\CmsStarterKit\sdk\GSFactory;
-use Gigya\CmsStarterKit\sdk\GSObject;
-use Gigya\CmsStarterKit\sdk\SigUtils;
-use Gigya\CmsStarterKit\user\GigyaUser;
-use Gigya\CmsStarterKit\user\GigyaUserFactory;
+	use Gigya\CmsStarterKit\sdk\GSApiException;
+	use Gigya\CmsStarterKit\sdk\GSFactory;
+	use Gigya\CmsStarterKit\sdk\SigUtils;
+	use Gigya\CmsStarterKit\user\GigyaUserFactory;
 
-class GigyaApiHelper
-{
+	class GigyaApiHelper
+	{
 
-    private $key;
-    private $secret;
-    private $apiKey;
-    private $dataCenter;
-    private $token;
-    private $defConfigFilePath;
+		private $key;
+		private $secret;
+		private $apiKey;
+		private $dataCenter;
+		private $defConfigFilePath;
 
-    /**
-     * GigyaApiHelper constructor.
-     *
-     * @param string $key    gigya app/user key
-     * @param string $secret gigya app/user secret
-     */
-    public function __construct($apiKey, $key, $secret, $dataCenter)
-    {
-        $this->defConfigFilePath = ".." . DIRECTORY_SEPARATOR . "configuration/DefaultConfiguration.json";
-        $defaultConf = @file_get_contents($this->defConfigFilePath);
-        if (!$defaultConf) {
-            $confArray = array();
-        } else {
-            $confArray = json_decode(file_get_contents($this->defConfigFilePath));
-        }
-        $this->key    = !empty($key) ? $key : $confArray['appKey'];
-        $this->secret = !empty($secret) ? self::decrypt($secret) : self::decrypt($confArray['appSecret']);
-        $this->apiKey = !empty($apiKey) ? $apiKey : $confArray['apiKey'];
-        $this->dataCenter = !empty($dataCenter) ? $dataCenter : $confArray['dataCenter'];
+		const IV_SIZE = 16;
 
-    }
+		/**
+		 * GigyaApiHelper constructor.
+		 *
+		 * @param string $apiKey     Gigya API key
+		 * @param string $key        Gigya app/user key
+		 * @param string $secret     Gigya app/user secret
+		 * @param string $dataCenter Gigya data center
+		 */
+		public function __construct($apiKey, $key, $secret, $dataCenter) {
+			$this->defConfigFilePath = ".." . DIRECTORY_SEPARATOR . "configuration/DefaultConfiguration.json";
+			$defaultConf = @file_get_contents($this->defConfigFilePath);
+			if (!$defaultConf)
+			{
+				$confArray = array();
+			}
+			else
+			{
+				$confArray = json_decode(file_get_contents($this->defConfigFilePath));
+			}
+			$this->key = !empty($key) ? $key : $confArray['appKey'];
+			$this->secret = !empty($secret) ? self::decrypt($secret) : self::decrypt($confArray['appSecret']);
+			$this->apiKey = !empty($apiKey) ? $apiKey : $confArray['apiKey'];
+			$this->dataCenter = !empty($dataCenter) ? $dataCenter : $confArray['dataCenter'];
 
-    public function sendApiCall($method, $params)
-    {
-        $req = GSFactory::createGSRequestAppKey($this->apiKey, $this->key, $this->secret, $method,
-          GSFactory::createGSObjectFromArray($params), $this->dataCenter);
+		}
 
-        return $req->send();
-    }
+		public function sendApiCall($method, $params) {
+			$req = GSFactory::createGSRequestAppKey($this->apiKey, $this->key, $this->secret, $method,
+													GSFactory::createGSObjectFromArray($params), $this->dataCenter);
 
-    /**
-     * Validate and get gigya user
-     * @param $uid
-     * @param $uidSignature
-     * @param $signatureTimestamp
-     * @param null $include
-     * @param null $extraProfileFields
-     * @param array $org_params
-     *
-     * @return bool|user\GigyaUser
-     */
-    public function validateUid($uid, $uidSignature, $signatureTimestamp, $include = null, $extraProfileFields = null, $org_params = array())
-    {
-        $params = $org_params;
-        $params['UID'] = $uid;
-        $params['UIDSignature'] = $uidSignature;
-        $params['signatureTimestamp'] = $signatureTimestamp;
-        $res          = $this->sendApiCall("socialize.exchangeUIDSignature", $params);
-        $sig          = $res->getData()->getString("UIDSignature", null);
-        $sigTimestamp = $res->getData()->getString("signatureTimestamp", null);
-        if (null !== $sig and null !== $sigTimestamp) {
-            if (SigUtils::validateUserSignature($uid, $sigTimestamp, $this->secret, $sig)) {
-                $user = $this->fetchGigyaAccount($uid, $include, $extraProfileFields, $org_params);
-                return $user;
-            }
-        }
+			return $req->send();
+		}
 
-        return false;
-    }
+		/**
+		 * Validate and get gigya user
+		 *
+		 * @param       $uid
+		 * @param       $uidSignature
+		 * @param       $signatureTimestamp
+		 * @param null  $include
+		 * @param null  $extraProfileFields
+		 * @param array $org_params
+		 *
+		 * @return bool|user\GigyaUser
+		 */
+		public function validateUid($uid, $uidSignature, $signatureTimestamp, $include = null, $extraProfileFields = null, $org_params = array()) {
+			$params = $org_params;
+			$params['UID'] = $uid;
+			$params['UIDSignature'] = $uidSignature;
+			$params['signatureTimestamp'] = $signatureTimestamp;
+			$res = $this->sendApiCall("socialize.exchangeUIDSignature", $params);
+			$sig = $res->getData()->getString("UIDSignature", null);
+			$sigTimestamp = $res->getData()->getString("signatureTimestamp", null);
+			if (null !== $sig && null !== $sigTimestamp)
+			{
+				if (SigUtils::validateUserSignature($uid, $sigTimestamp, $this->secret, $sig))
+				{
+					$user = $this->fetchGigyaAccount($uid, $include, $extraProfileFields, $org_params);
+					return $user;
+				}
+			}
+
+			return false;
+		}
 
     /**
      * @param string $uid                UID
@@ -87,7 +97,7 @@ class GigyaApiHelper
      *
      * @return GigyaUser
      */
-    public function fetchGigyaAccount($uid, $include = null, $extraProfileFields = null, $params = array())
+		public function fetchGigyaAccount($uid, $include = null, $extraProfileFields = null, $params = array())
     {
         if (null === $include) {
             $include = 'identities-active,identities-all,identities-global,loginIDs,emails,profile,data,password,isLockedOut,'
@@ -114,7 +124,7 @@ class GigyaApiHelper
         return $gigyaUser;
     }
 
-    /**
+		/**
      * Send all the Gigya data for the user specified by the UID
      *
      * Data format example :
@@ -166,82 +176,107 @@ class GigyaApiHelper
         $this->sendApiCall('accounts.setAccountInfo', $paramsArray);
     }
 
-    public function getSiteSchema()
-    {
-        $params = GSFactory::createGSObjectFromArray(array("apiKey" => $this->apiKey));
-        $res    = $this->sendApiCall("accounts.getSchema", $params);
-        //TODO: implement
-    }
+		public function getSiteSchema() {
+			$params = GSFactory::createGSObjectFromArray(array("apiKey" => $this->apiKey));
+			$this->sendApiCall("accounts.getSchema", $params);
+//        $res    = $this->sendApiCall("accounts.getSchema", $params);
+			//TODO: implement
+		}
 
-    public function isRaasEnabled($apiKey = null)
-    {
-        if (null === $apiKey) {
-            $apiKey = $this->apiKey;
-        }
-        $params = GSFactory::createGSObjectFromArray(array("apiKey" => $apiKey));
-        try {
-            $this->sendApiCall("accounts.getGlobalConfig", $params);
-            return true;
-        } catch (GSApiException $e) {
-            if ($e->getErrorCode() == 403036) {
-                return false;
-            }
-            throwException($e);
-        }
-        return false;
-    }
+		public function isRaasEnabled($apiKey = null) {
+			if (null === $apiKey)
+			{
+				$apiKey = $this->apiKey;
+			}
+			$params = GSFactory::createGSObjectFromArray(array("apiKey" => $apiKey));
+			try
+			{
+				$this->sendApiCall("accounts.getGlobalConfig", $params);
+				return true;
+			}
+			catch (GSApiException $e)
+			{
+				if ($e->getErrorCode() == 403036)
+				{
+					return false;
+				}
+				throwException($e);
+			}
+			return false;
+		}
 
-    public function queryDs($uid, $table, $fields)
-    {
+		public function queryDs($uid, $table, $fields) {
 
 
-    }
+		}
 
-    public function userObjFromArray($user_arr)
-    {
-        $obj = GigyaUserFactory::createGigyaUserFromArray($user_arr);
-        return $obj;
-    }
+		public function userObjFromArray($user_arr) {
+			$obj = GigyaUserFactory::createGigyaUserFromArray($user_arr);
+			return $obj;
+		}
 
-    // static
+		// static
 
-    static public function decrypt($str, $key = null)
-    {
-        if (null == $key) {
-            $key = getenv("KEK");
-        }
-        if (!empty($key)) {
-            $iv_size       = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
-            $strDec        = base64_decode($str);
-            $iv            = substr($strDec, 0, $iv_size);
-            $text_only     = substr($strDec, $iv_size);
-            $plaintext_dec = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $key,
-              $text_only, MCRYPT_MODE_CBC, $iv);
+		/**
+		 * @param string        $str
+		 * @param null | string $key
+		 * @return string
+		 */
+		static public function decrypt($str, $key = null) {
+			if (null == $key)
+			{
+				$key = getenv("KEK");
+			}
+			if (!empty($key))
+			{
+				$strDec = base64_decode($str);
+				$iv = substr($strDec, 0, self::IV_SIZE);
+				$text_only = substr($strDec, self::IV_SIZE);
+				$plaintext_dec = openssl_decrypt($text_only, 'AES-256-CBC', $key, 0, $iv);
 
-            return $plaintext_dec;
-        }
-        return $str;
-    }
+				return $plaintext_dec;
+			}
+			return $str;
+		}
 
-    static public function enc($str, $key = null)
-    {
-        if (null == $key) {
-            $key = getenv("KEK");
-        }
-        $iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
-        $iv      = mcrypt_create_iv($iv_size, MCRYPT_RAND);
-        $crypt   = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $key, $str, MCRYPT_MODE_CBC, $iv);
+		/**
+		 * @param string        $str
+		 * @param null | string $key
+		 * @return string
+		 */
+		static public function enc($str, $key = null) {
+			if (null == $key)
+			{
+				$key = getenv("KEK");
+			}
+			$iv = openssl_random_pseudo_bytes(self::IV_SIZE);
+			$crypt = openssl_encrypt($str, 'AES-256-CBC', $key, null, $iv);
 
-        return trim(base64_encode($iv . $crypt));
-    }
+			return trim(base64_encode($iv . $crypt));
+		}
 
-    static public function genKeyFromString($str = null) {
-        if (null == $str) {
-            $str = openssl_random_pseudo_bytes(32);
-        }
-        $salt = mcrypt_create_iv(16, MCRYPT_DEV_URANDOM);
-        $key = hash_pbkdf2("sha256", $str, $salt, 1000, 32);
-        return $key;
-    }
+		/**
+		 * Alias of enc()
+		 *
+		 * @param string        $str
+		 * @param null | string $key
+		 * @return string
+		 */
+		public static function encrypt($str, $key = null) {
+			return GigyaApiHelper::enc($str, $key);
+		}
 
-}
+		/**
+		 * @param null | string $str
+		 * @return mixed
+		 */
+		static public function genKeyFromString($str = null) {
+			if (null == $str)
+			{
+				$str = openssl_random_pseudo_bytes(32);
+			}
+			$salt = openssl_random_pseudo_bytes(32);
+			$key = hash_pbkdf2("sha256", $str, $salt, 1000, 32);
+			return $key;
+		}
+	}

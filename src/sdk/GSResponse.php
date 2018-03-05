@@ -15,7 +15,13 @@ class GSResponse
     private $errorMessage = null;
     private $rawData = "";
     private $data; //GSObject
+	/**
+	 * @var GSObject
+	 */
     private static $errorMsgDic;
+	/**
+	 * @var GSObject
+	 */
     private $params = null;
     private $method = null;
     private $traceLog = null;

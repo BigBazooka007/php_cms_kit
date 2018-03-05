@@ -29,7 +29,6 @@ class GSRequest
 
     private $apiKey;
     private $userKey;
-    private $secret;
     private $params; //GSObject
     private $useHTTPS;
     private $apiDomain = self::DEFAULT_API_DOMAIN;
@@ -45,13 +44,13 @@ class GSRequest
      * You must provide a user ID (UID) of the tage user.
      * Suitable for calling our old REST API
      *
-     * @param apiKey
-     * @param secretKey
-     * @param apiMethod the api method (including namespace) to call. for example: socialize.getUserInfo
+     * @param string $apiKey
+     * @param string $secret
+     * @param string $apiMethod the api method (including namespace) to call. for example: socialize.getUserInfo
      * If namespaces is not supplied "socialize" is assumed
-     * @param params the request parameters
-     * @param useHTTPS useHTTPS set this to true if you want to use HTTPS.
-     * @param userKey userKey A key of an admin user with extra permissions.
+     * @param GSObject $params the request parameters
+     * @param bool $useHTTPS useHTTPS set this to true if you want to use HTTPS.
+     * @param string $userKey userKey A key of an admin user with extra permissions.
      * If this parameter is provided, then the secretKey parameter is assumed to be the admin user's secret key and not the site's secret key.
      */
     public function __construct($apiKey, $secret, $apiMethod, $params = null, $useHTTPS = false, $userKey = null)
@@ -193,6 +192,18 @@ class GSRequest
         }
     }
 
+	/**
+	 * @param string $method
+	 * @param string $domain
+	 * @param string $path
+	 * @param GSObject $params
+	 * @param string $token
+	 * @param string $secret
+	 * @param bool $useHTTPS
+	 * @param $timeout
+	 * @param string $userKey
+	 * @return bool|string
+	 */
     private function sendRequest($method, $domain, $path, $params, $token, $secret, $useHTTPS = false, $timeout = null, $userKey = null)
     {
         $params->put("sdk", "php_" . GSRequest::version);
@@ -205,7 +216,7 @@ class GSRequest
 
         //timestamp in milliseconds
         $nonce = ((string)SigUtils::currentTimeMillis()) . rand();
-        $httpMethod = "POST";
+        $httpMethod = $method;
 
         if ($userKey) {
             $params->put("userKey", $userKey);
@@ -229,9 +240,16 @@ class GSRequest
         return $res;
     }
 
-
+	/**
+	 * @param string $url
+	 * @param GSObject $params
+	 * @param $timeout
+	 * @return bool|string
+	 * @throws Exception
+	 */
     private function curl($url, $params, $timeout = null)
     {
+    	$postData = array();
         foreach ($params->getKeys() as $key) {
             $value = $params->getString($key);
             $postData[$key] = $value;
@@ -288,7 +306,7 @@ class GSRequest
 
     /**
      * Converts a GSObject to a query string
-     * @param params
+     * @param GSObject $params
      * @return string
      */
     public static function buildQS($params)
@@ -315,10 +333,15 @@ class GSRequest
         return SigUtils::calcSignature($baseString, $key);
     }
 
+	/**
+	 * @param string $httpMethod
+	 * @param string $url
+	 * @param bool $isSecureConnection
+	 * @param GSObject $requestParams
+	 * @return string
+	 */
     private static function calcOAuth1BaseString($httpMethod, $url, $isSecureConnection, $requestParams)
     {
-
-
         $normalizedUrl = "";
         $u = parse_url($url);
         $protocol = strtolower($u["scheme"]);
