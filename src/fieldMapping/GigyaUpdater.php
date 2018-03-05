@@ -1,20 +1,11 @@
 <?php
 
-/**
- * Created by PhpStorm.
- * User: Yaniv Aran-Shamir
- * Date: 5/26/16
- * Time: 2:05 PM
- */
-
-
 namespace Gigya\CmsStarterKit\fieldMapping;
 
 use Gigya\CmsStarterKit\GigyaApiHelper;
 
 abstract class GigyaUpdater
 {
-
     /**
      * @var array
      */
@@ -44,7 +35,6 @@ abstract class GigyaUpdater
      */
     private $apiHelper;
 
-
     /**
      * GigyaUpdater constructor.
 	 *
@@ -60,7 +50,6 @@ abstract class GigyaUpdater
         $this->path     = (string) $path;
         $this->mapped   = ! empty($this->path);
         $this->apiHelper = $apiHelper;
-
     }
 
     public function updateGigya()
@@ -151,8 +140,6 @@ abstract class GigyaUpdater
      */
     abstract protected function getMappingFromCache();
 
-
-
     protected function retrieveFieldMappings()
     {
 
@@ -187,11 +174,13 @@ abstract class GigyaUpdater
         return $gigyaArray;
     }
 
+    /**
+     * Method callSetAccountInfo
+     */
     protected function callSetAccountInfo()
     {
-        $this->apiHelper->updateGigyaAccount($this->gigyaUid, $this->gigyaArray['profile'], $this->gigyaArray['data']);
+        $this->apiHelper->updateGigyaAccount($this->gigyaUid, $this->gigyaArray);
     }
-
 
     /**
      * @param mixed $val
@@ -210,12 +199,21 @@ abstract class GigyaUpdater
             case "int":
                 return (int) $val;
                 break;
+			case "boolean":
             case "bool":
                 if (is_string($val)) {
                     $val = strtolower($val);
                 }
                 return filter_var($val, FILTER_VALIDATE_BOOLEAN);
                 break;
+			case 'date':
+				if (!preg_match('/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|(\+|-)\d{2}(:?\d{2})?)/', $val)) {
+					$datetime = new \DateTime($val);
+					// Return date in format ISO 8601 (https://en.wikipedia.org/wiki/ISO_8601)
+					$val = $datetime->format('c');
+				}
+				return $val;
+				break;
             default:
                 return $val;
                 break;
@@ -226,11 +224,14 @@ abstract class GigyaUpdater
     {
         $keys = explode($separator, $path);
 
-        foreach ($keys as $key) {
+        foreach ($keys as $key)
+        {
+        	if (!array_key_exists($key, $arr))
+        		$arr[$key] = array();
+
             $arr = &$arr[$key];
         }
 
         $arr = $value;
     }
-
 }
