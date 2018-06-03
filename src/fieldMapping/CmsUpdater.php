@@ -121,6 +121,9 @@ abstract class CmsUpdater
             case "varchar":
                 $value = (string)$value;
                 break;
+			case "bool":
+				$value = boolval($value); /* PHP 5.5+ */
+				break;
         }
 
         return $value;
