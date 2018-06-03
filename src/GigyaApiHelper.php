@@ -50,6 +50,15 @@
 
 		}
 
+		/**
+		 * @param $method
+		 * @param $params
+		 *
+		 * @return sdk\GSResponse
+		 *
+		 * @throws GSApiException
+		 * @throws sdk\GSException
+		 */
 		public function sendApiCall($method, $params) {
 			$req = GSFactory::createGSRequestAppKey($this->apiKey, $this->key, $this->secret, $method,
 													GSFactory::createGSObjectFromArray($params), $this->dataCenter);
@@ -68,6 +77,9 @@
 		 * @param array $org_params
 		 *
 		 * @return bool|user\GigyaUser
+		 *
+		 * @throws GSApiException
+		 * @throws sdk\GSException
 		 */
 		public function validateUid($uid, $uidSignature, $signatureTimestamp, $include = null, $extraProfileFields = null, $org_params = array()) {
 			$params = $org_params;
@@ -89,6 +101,16 @@
 			return false;
 		}
 
+		/**
+		 * @param string $uid
+		 * @param        $include
+		 * @param        $extraProfileFields
+		 * @param array  $params
+		 *
+		 * @return user\GigyaUser
+		 * @throws GSApiException
+		 * @throws sdk\GSException
+		 */
 		public function fetchGigyaAccount($uid, $include = null, $extraProfileFields = null, $params = array()) {
 			if (null == $include)
 			{
@@ -123,12 +145,14 @@
 		 * @param array  $profile
 		 * @param array  $data
 		 *
+		 * @throws \InvalidArgumentException
 		 * @throws GSApiException
+		 * @throws sdk\GSException
 		 */
 		public function updateGigyaAccount($uid, $profile = array(), $data = array()) {
 			if (empty($uid))
 			{
-				throw new \InvalidArgumentException("uid can not be empty");
+				throw new \InvalidArgumentException("UID cannot be empty");
 			}
 			$paramsArray['UID'] = $uid;
 			if (!empty($profile) && count($profile) > 0)
@@ -142,6 +166,10 @@
 			$this->sendApiCall("accounts.setAccountInfo", $paramsArray);
 		}
 
+		/**
+		 * @throws GSApiException
+		 * @throws sdk\GSException
+		 */
 		public function getSiteSchema() {
 			$params = GSFactory::createGSObjectFromArray(array("apiKey" => $this->apiKey));
 			$this->sendApiCall("accounts.getSchema", $params);
@@ -149,6 +177,12 @@
 			//TODO: implement
 		}
 
+		/**
+		 * @param null $apiKey
+		 *
+		 * @return bool
+		 * @throws sdk\GSException
+		 */
 		public function isRaasEnabled($apiKey = null) {
 			if (null === $apiKey)
 			{
@@ -181,7 +215,7 @@
 			return $obj;
 		}
 
-		// static
+		/*** Static ***/
 
 		/**
 		 * @param string        $str
